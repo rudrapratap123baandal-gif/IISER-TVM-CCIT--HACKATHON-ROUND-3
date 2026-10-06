@@ -190,6 +190,11 @@ class MatchOrchestrator:
 
         except asyncio.CancelledError:
             pass
+        except Exception as e:
+            print(f"[MatchOrchestrator] Unexpected error in simulation loop: {e}")
+            if self.state:
+                self.state.add_combat_log(f"Engine note: {str(e)}", category="match", icon="⚠️")
+            await self.broadcast_state()
 
     async def _execute_one_tick(self):
         if not self.state or not self.simulator or not self.red_skill or not self.blue_skill:

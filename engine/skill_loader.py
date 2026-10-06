@@ -8,71 +8,130 @@ import os
 from typing import Dict, Any, List, Optional
 from engine.config import CARD_CATALOG
 
-def detect_card_from_text(text: str) -> Optional[str]:
-    """Bulletproof card recognition handling abbreviations, dots, and synonyms."""
-    t = text.lower().strip()
-    t_clean = re.sub(r"[^a-z0-9]", "", t)
+CARD_PATTERNS = [
+    ("baby_dragon", r"\b(?:baby\s*dragon|babydragon|baby_dragon)\b"),
+    ("goblin_barrel", r"\b(?:goblin\s*barrel|goblinbarrel|goblin_barrel|dagger\s*goblin)\b"),
+    ("hog_rider", r"\b(?:hog\s*rider|hogrider|hog_rider)\b"),
+    ("skeletons", r"\b(?:skeleton\s*army|skarmy|skeletons|skeleton)\b"),
+    ("pekka", r"\b(?:p\.?e\.?k\.?k\.?a|peka)\b"),
+    ("musketeer", r"\b(?:musketeer|muskteer|musket)\b"),
+    ("archers", r"\b(?:archers|archer|bowman)\b"),
+    ("giant", r"\b(?:giant|golem)\b"),
+    ("fireball", r"\b(?:fireball|fire\s*ball)\b"),
+    ("knight", r"\b(?:knight)\b"),
+    ("goblin_barrel", r"\b(?:barrel)\b"),
+    ("hog_rider", r"\b(?:hog)\b"),
+    ("baby_dragon", r"\b(?:dragon)\b"),
+]
 
-    if "pekka" in t_clean or "peka" in t_clean:
-        return "pekka"
-    if "babydragon" in t_clean or "dragon" in t_clean:
-        return "baby_dragon"
-    if "goblinbarrel" in t_clean or "barrel" in t_clean or "goblin" in t_clean:
-        return "goblin_barrel"
-    if "hogrider" in t_clean or "hog" in t_clean:
-        return "hog_rider"
-    if "skeleton" in t_clean or "skarmy" in t_clean:
-        return "skeletons"
-    if "musket" in t_clean:
-        return "musketeer"
-    if "archer" in t_clean or "bowman" in t_clean:
-        return "archers"
-    if "giant" in t_clean or "golem" in t_clean:
-        return "giant"
-    if "fireball" in t_clean or "spell" in t_clean:
-        return "fireball"
-    if "knight" in t_clean:
-        return "knight"
-    return None
+def find_all_cards_in_text(text: str) -> List[str]:
+    """Finds all cards mentioned in text in appearance order."""
+    matches = []
+    t = text.lower()
+    for cid, pat in CARD_PATTERNS:
+        for m in re.finditer(pat, t):
+            matches.append((m.start(), m.end(), cid))
+    matches.sort(key=lambda x: (x[0], -(x[1] - x[0])))
+    res = []
+    seen = set()
+    last_end = -1
+    for start, end, cid in matches:
+        if start >= last_end and cid not in seen:
+            res.append(cid)
+            seen.add(cid)
+            last_end = end
+    return res
+
+def detect_card_from_text(text: str) -> Optional[str]:
+    """Bulletproof card recognition returning the first card appearing in text."""
+    cards = find_all_cards_in_text(text)
+    return cards[0] if cards else None
 
 def parse_tactical_trigger_rule(raw_line: str) -> Dict[str, Any]:
     """Parses natural language IF-THEN / -> trigger rules into actionable conditions and actions."""
     clean_line = re.sub(r"^\d+[\.\)]\s*", "", raw_line).lstrip("-* ").strip()
-    parts = re.split(r"->|then", clean_line, flags=re.IGNORECASE)
-    cond_text = parts[0].strip()
-    action_text = parts[1].strip() if len(parts) > 1 else clean_line
+    parts = re.split(r"\s*(?:->\s*then\b|->|\b,\s*then\b|\bthen\b)\s*", clean_line, maxsplit=1, flags=re.IGNORECASE)
+    if len(parts) > 1:
+        cond_text = parts[0].strip()
+        action_text = parts[1].strip()
+    else:
+        if_m = re.match(r"^if\s+(.+?),\s*(.+)$", clean_line, re.IGNORECASE)
+        if if_m:
+            cond_text = if_m.group(1).strip()
+            action_text = if_m.group(2).strip()
+        else:
+            cond_text = clean_line
+            action_text = clean_line
 
+    cond_clean = re.sub(r"^(?:if|when)\s+", "", cond_text, flags=re.IGNORECASE).strip()
     cond: Dict[str, Any] = {}
-    elixir_m = re.search(r"elixir\s*(?:>=|>|is\s*at\s*least|=)\s*(\d+)", cond_text, re.IGNORECASE)
+    c_low = cond_clean.lower()
+
+    # 1. Friendly card check (e.g. "our PEKKA is deployed", "my pekka")
+    is_friendly = bool(re.search(r"\b(?:our|my|allied|friendly)\s+([a-zA-Z\s\._]+)", cond_clean, re.IGNORECASE))
+    if is_friendly:
+        f_cards = find_all_cards_in_text(cond_clean)
+        if f_cards:
+            cond["friendly_card"] = f_cards[0]
+
+    # 2. Elixir check (handles "elixir >= 8", "my elixer is greater than 8", etc.)
+    elixir_m = re.search(r"elix[ie]r\s*(?:>=|>|is\s*at\s*least|=|is\s*greater\s*than|greater\s*than|more\s*than|above|over)\s*(\d+(?:\.\d+)?)", cond_clean, re.IGNORECASE)
     if elixir_m:
         cond["min_elixir"] = float(elixir_m.group(1))
 
-    tower_hp_m = re.search(r"(?:tower|hp)\s*(?:<|below|under)\s*(\d+)", cond_text, re.IGNORECASE)
+    # 3. Tower HP direct threshold (e.g. "Tower HP < 380")
+    tower_hp_m = re.search(r"(?:tower|hp)\s*(?:<|below|under|less\s*than|<=)\s*(\d+)", cond_clean, re.IGNORECASE)
     if tower_hp_m:
         cond["max_tower_hp"] = int(tower_hp_m.group(1))
 
-    if re.search(r"giant|pekka|heavy\s*tank|tank|golem", cond_text, re.IGNORECASE):
+    # 4. Tower HP percentage threshold (e.g. "less than its 10% of its initial HP")
+    tower_pct_m = re.search(r"(?:tower|hp).*?(?:<|below|under|less\s*than|<=)?\s*(\d+)\s*%", cond_clean, re.IGNORECASE)
+    if tower_pct_m:
+        cond["max_tower_hp_pct"] = int(tower_pct_m.group(1))
+
+    # 5. Enemy Cards
+    if not is_friendly:
+        e_cards = find_all_cards_in_text(cond_clean)
+        if e_cards:
+            cond["enemy_cards"] = e_cards
+            if any(c in ["giant", "pekka", "hog_rider"] for c in e_cards):
+                cond["enemy_tank"] = True
+            if any(c in ["skeletons", "archers"] for c in e_cards):
+                cond["enemy_swarm"] = True
+
+    if re.search(r"\b(?:heavy\s*tank|tank|golem)\b", cond_clean, re.IGNORECASE):
         cond["enemy_tank"] = True
-    if re.search(r"swarm|skeleton|archer", cond_text, re.IGNORECASE):
+    if re.search(r"\b(?:swarm|skarmy)\b", cond_clean, re.IGNORECASE):
         cond["enemy_swarm"] = True
-    if re.search(r"left", cond_text, re.IGNORECASE):
+
+    if "left" in c_low:
         cond["enemy_left"] = True
-    if re.search(r"right", cond_text, re.IGNORECASE):
+    if "right" in c_low:
         cond["enemy_right"] = True
-    if re.search(r"clear|open|undefended", cond_text, re.IGNORECASE):
+    if re.search(r"\b(?:clear|open|undefended)\b", cond_clean, re.IGNORECASE):
         cond["lane_clear"] = True
+    if re.search(r"(?:crosses\s+the\s+bridge|across\s+the\s+bridge|after\s+it\s+crosses|bridge)", cond_clean, re.IGNORECASE):
+        cond["cross_bridge"] = True
 
+    # ACTION PARSING
     action: Dict[str, Any] = {}
-    action_card = detect_card_from_text(action_text)
-    if action_card:
-        action["card"] = action_card
+    action_cards = find_all_cards_in_text(action_text)
+    if action_cards:
+        action["card"] = action_cards[0]
+        if len(action_cards) > 1:
+            action["secondary_card"] = action_cards[1]
 
-    if "right" in action_text.lower():
-        action["lane"] = "right"
-    elif "left" in action_text.lower():
-        action["lane"] = "left"
-    elif "opposite" in action_text.lower() or "counter" in action_text.lower():
+    act_low = action_text.lower()
+    if "opposite" in act_low or "counter" in act_low:
         action["lane"] = "opposite"
+    elif "same" in act_low or "that lane" in act_low:
+        action["lane"] = "same"
+    elif "least" in act_low or "lowest" in act_low:
+        action["lane"] = "lowest_hp_tower"
+    elif "right" in act_low:
+        action["lane"] = "right"
+    elif "left" in act_low:
+        action["lane"] = "left"
 
     return {
         "raw": clean_line,
@@ -177,17 +236,17 @@ def parse_clash_skill(content: str) -> ClashSkillProfile:
 
         name_m = re.match(r"^#\s*(?:Kingdom\s*Name|Commander\s*Name|Deck\s*Name|Name)\s*:\s*(.+)$", stripped, re.IGNORECASE)
         if name_m:
-            name = name_m.group(1).strip()
+            name = name_m.group(1).strip().strip("<>\"'").strip()
             continue
 
         author_m = re.match(r"^#\s*(?:Author|Team|Player(?:\s*[\/&]\s*Author)?|Ruler)\s*:\s*(.+)$", stripped, re.IGNORECASE)
         if author_m:
-            author = author_m.group(1).strip()
+            author = author_m.group(1).strip().strip("<>\"'").strip()
             continue
 
         war_m = re.match(r"^#\s*War\s*Cry\s*:\s*[\"']?(.+?)[\"']?$", stripped, re.IGNORECASE)
         if war_m:
-            war_cry = war_m.group(1).strip()
+            war_cry = war_m.group(1).strip().strip("<>\"'").strip()
             continue
 
         if stripped.startswith("##"):
@@ -203,6 +262,10 @@ def parse_clash_skill(content: str) -> ClashSkillProfile:
             else:
                 current_section = "other"
             section_texts[current_section] = []
+            continue
+
+        # Skip template comments inside sections
+        if stripped.startswith("#"):
             continue
 
         if current_section:
@@ -233,7 +296,7 @@ def parse_clash_skill(content: str) -> ClashSkillProfile:
     deck = deck[:8]
 
     # 2. Archetype detection
-    doc_text = " ".join(section_texts.get("doctrine", [])).lower()
+    doc_text = (name + " " + " ".join(section_texts.get("doctrine", []))).lower()
     if "hog" in doc_text or "cycle" in doc_text:
         archetype = "hog_cycle"
     elif "beatdown" in doc_text or "giant" in doc_text:
@@ -247,9 +310,15 @@ def parse_clash_skill(content: str) -> ClashSkillProfile:
 
     # 3. Lane detection
     lane_text = " ".join(section_texts.get("lane", [])).lower()
-    if "left" in lane_text or "left" in doc_text:
+    if "left" in lane_text:
         preferred_lane = "left"
-    elif "right" in lane_text or "right" in doc_text:
+    elif "right" in lane_text:
+        preferred_lane = "right"
+    elif "balanced" in lane_text:
+        preferred_lane = "balanced"
+    elif "left" in doc_text:
+        preferred_lane = "left"
+    elif "right" in doc_text:
         preferred_lane = "right"
     else:
         preferred_lane = "balanced"
@@ -258,6 +327,8 @@ def parse_clash_skill(content: str) -> ClashSkillProfile:
     parsed_triggers: List[Dict[str, Any]] = []
     if "triggers" in section_texts:
         for tline in section_texts["triggers"]:
+            if tline.startswith("#"):
+                continue
             clean_t = re.sub(r"^\d+[\.\)]\s*", "", tline).lstrip("-* ").strip()
             if clean_t and len(clean_t) > 5:
                 triggers.append(clean_t)

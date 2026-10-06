@@ -546,6 +546,15 @@ class ClashBattleSimulator:
             self.state.events.append({"type": "victory", "winner": "blue"})
             return
 
+        # Sudden Death Overtime: first tower taken down wins immediately!
+        if self.state.is_overtime and red_crowns != blue_crowns:
+            self.state.status = "finished"
+            self.state.winner = "red" if red_crowns > blue_crowns else "blue"
+            self.state.win_reason = f"⏱️ SUDDEN DEATH OVERTIME VICTORY for {self.state.winner.upper()}! First tower taken down!"
+            self.state.events.append({"type": "victory", "winner": self.state.winner})
+            self.state.add_combat_log(self.state.win_reason, category="victory", icon="👑")
+            return
+
         # Standard Timer (3 mins = 180s)
         if self.state.elapsed_seconds >= self.state.max_duration_seconds:
             if red_crowns > blue_crowns:

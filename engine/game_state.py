@@ -178,13 +178,19 @@ class ClashGameState:
         my_troops = [t for t in self.troops if t.team == team]
         opp_troops = [t for t in self.troops if t.team == opp_team]
 
+        opp_last_card = opp.last_action.get("card", "none")
+        opp_last_lane = opp.last_action.get("lane", "none")
+        last_deployment_line = ""
+        if opp_last_card and opp_last_card != "none":
+            last_deployment_line = f"\nLast Enemy Deployment: {opp_last_card} on {opp_last_lane}"
+
         brief = f"""CLASH ARENA BRIEF ({team.upper()}):
 Time: {int(self.elapsed_seconds)}s / {self.max_duration_seconds}s {'[2X ELIXIR!]' if self.is_double_elixir else ''}
 Your Elixir: {int(me.elixir)}/10 | Crowns: {me.crowns}
 Your Towers: Left Princess={my_left}HP, Right Princess={my_right}HP, King={my_king}HP
 Enemy Towers: Left Princess={opp_left}HP, Right Princess={opp_right}HP, King={opp_king}HP
-Your Active Troops: {len(my_troops)} ({', '.join([f'{t.name} on {t.lane}' for t in my_troops[:4]]) or 'None'})
-Enemy Incoming Troops: {len(opp_troops)} ({', '.join([f'{t.name} on {t.lane}' for t in opp_troops[:4]]) or 'None'})
+Your Active Troops: {len(my_troops)} ({', '.join([f'{t.name} on {t.lane}' for t in my_troops[:6]]) or 'None'})
+Enemy Incoming Troops: {len(opp_troops)} ({', '.join([f'{t.name} on {t.lane}' for t in opp_troops[:6]]) or 'None'}){last_deployment_line}
 Available Cards in Deck: {', '.join(me.deck)}
 
 Choose 1 card to play and lane ("left" or "right"), or "none" to save elixir!"""
