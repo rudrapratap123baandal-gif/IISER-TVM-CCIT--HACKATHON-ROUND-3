@@ -208,13 +208,289 @@
 
       </div>
 
-      <!-- TACTICAL DECK FORGE -->
-      <div class="quick-creator-card">
-        <div class="creator-header">
-          <h3><i data-lucide="hammer"></i> TACTICAL DECK FORGE // RAPID STRATEGY CREATOR</h3>
-          <p>Assemble a custom combat doctrine and immediately deploy it into the tournament roster.</p>
+      <!-- ============================================================== -->
+      <!-- 4.1 SCHEMA DEFINITION & STRATEGY DOSSIER BLUEPRINT             -->
+      <!-- ============================================================== -->
+      <div class="schema-definition-card" id="schemaDefinitionCard">
+        
+        <!-- Header with Title, Anchor, and Action Cluster -->
+        <div class="schema-header">
+          <div class="schema-header-left">
+            <div class="schema-tag">
+              <span class="tag-status-dot"></span>
+              <span>OFFICIAL DOSSIER SPECIFICATION // CLASH AUTONOMOUS ARENA</span>
+            </div>
+            <h2 class="schema-title">
+              <i data-lucide="link" class="schema-anchor-icon"></i> 4.1 Schema Definition
+            </h2>
+            <p class="schema-subtitle">A valid skill file must contain the following sections:</p>
+          </div>
+
+          <div class="schema-header-actions">
+            <button class="schema-action-btn" id="btnCopySchema" title="Copy Raw Markdown Schema to Clipboard">
+              <i data-lucide="copy"></i> <span id="copySchemaBtnText">Copy Template</span>
+            </button>
+            <button class="schema-action-btn btn-action-accent" id="btnLoadSchemaToForge" title="Load into Live Dossier Forge">
+              <i data-lucide="sparkles"></i> <span>Open in Forge</span>
+            </button>
+            <button class="schema-action-btn" id="btnDownloadSchema" title="Download .md template file">
+              <i data-lucide="download"></i> <span>Download .md</span>
+            </button>
+          </div>
         </div>
-        <div class="creator-form">
+
+        <!-- Schema Sub-Navigation Bar -->
+        <div class="schema-subnav">
+          <button class="schema-tab active" data-schematab="blueprint">
+            <i data-lucide="code-2"></i> CODE BLUEPRINT
+          </button>
+          <button class="schema-tab" data-schematab="breakdown">
+            <i data-lucide="layers"></i> 5 MANDATORY SECTIONS
+          </button>
+          <button class="schema-tab" data-schematab="cards">
+            <i data-lucide="layout-grid"></i> 10 CATALOG CARDS
+          </button>
+        </div>
+
+        <!-- SUB-PANEL 1: CODE BLUEPRINT (Faithfully matching image) -->
+        <div class="schema-panel active" id="panelSchemaBlueprint">
+          <div class="code-window">
+            <div class="code-window-bar">
+              <div class="window-dots">
+                <span class="w-dot red"></span>
+                <span class="w-dot yellow"></span>
+                <span class="w-dot green"></span>
+              </div>
+              <span class="code-window-filename"><i data-lucide="file-code"></i> skill_dossier_schema.md</span>
+              <button class="code-copy-btn" id="btnCodeWindowCopy" title="Copy Markdown">
+                <i data-lucide="copy"></i>
+              </button>
+            </div>
+            
+            <pre class="schema-code-block"><code><span class="c-header"># Deck Name: <span class="c-param">&lt;Kingdom / Commander Title&gt;</span></span>
+<span class="c-header"># Player / Author: <span class="c-param">&lt;Team Name&gt;</span></span>
+<span class="c-header"># War Cry: <span class="c-string">"&lt;Short Custom Battle Cry&gt;"</span></span>
+
+<span class="c-section">## Archetype &amp; Playstyle</span>
+<span class="c-body">&lt;Brief description of strategic doctrine: cycle, beatdown, spell_bait...&gt;</span>
+
+<span class="c-section">## 8-Card Battle Deck</span>
+<span class="c-bullet">- &lt;card_id_1&gt;: &lt;weight_percentage&gt;%</span>
+<span class="c-bullet">- &lt;card_id_2&gt;: &lt;weight_percentage&gt;%</span>
+<span class="c-bullet">- &lt;card_id_3&gt;: &lt;weight_percentage&gt;%</span>
+<span class="c-bullet">- &lt;card_id_4&gt;: &lt;weight_percentage&gt;%</span>
+<span class="c-bullet">- &lt;card_id_5&gt;: &lt;weight_percentage&gt;%</span>
+<span class="c-bullet">- &lt;card_id_6&gt;: &lt;weight_percentage&gt;%</span>
+<span class="c-bullet">- &lt;card_id_7&gt;: &lt;weight_percentage&gt;%</span>
+<span class="c-bullet">- &lt;card_id_8&gt;: &lt;weight_percentage&gt;%</span>
+
+<span class="c-section">## Preferred Lane</span>
+<span class="c-body">&lt;"left", "right", or "balanced"&gt;</span>
+
+<span class="c-section">## Tactical Triggers (If-Then Rules)</span>
+<span class="c-trigger"><span class="c-num">1.</span> <span class="c-if">IF</span> &lt;Condition&gt; <span class="c-arrow">-&gt;</span> &lt;Action&gt;!</span>
+<span class="c-trigger"><span class="c-num">2.</span> <span class="c-if">IF</span> &lt;Condition&gt; <span class="c-arrow">-&gt;</span> &lt;Action&gt;!</span>
+<span class="c-trigger"><span class="c-num">3.</span> <span class="c-if">IF</span> &lt;Condition&gt; <span class="c-arrow">-&gt;</span> &lt;Action&gt;!</span>
+<span class="c-trigger"><span class="c-num">4.</span> <span class="c-if">IF</span> &lt;Condition&gt; <span class="c-arrow">-&gt;</span> &lt;Action&gt;!</span></code></pre>
+          </div>
+        </div>
+
+        <!-- SUB-PANEL 2: 5 MANDATORY SECTIONS INTERACTIVE GUIDE -->
+        <div class="schema-panel" id="panelSchemaBreakdown">
+          <div class="spec-breakdown-grid">
+            
+            <div class="spec-item-card">
+              <div class="spec-num-badge">01</div>
+              <div class="spec-item-content">
+                <h4><i data-lucide="crown"></i> Header Metadata</h4>
+                <p>Declares deck identity, commander name, and battle war cry shouted during entrance and tower destructions.</p>
+                <div class="spec-tags">
+                  <code># Deck Name: &lt;Title&gt;</code>
+                  <code># Player / Author: &lt;Team&gt;</code>
+                  <code># War Cry: "&lt;Battle Cry&gt;"</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="spec-item-card">
+              <div class="spec-num-badge">02</div>
+              <div class="spec-item-content">
+                <h4><i data-lucide="compass"></i> Archetype &amp; Playstyle</h4>
+                <p>Governs overall aggression cadence, elixir threshold holding, and bridgehead counter-pushing.</p>
+                <div class="spec-archetype-chips">
+                  <span class="spec-pill arch-cycle">🐗 cycle</span>
+                  <span class="spec-pill arch-beatdown">🗿 beatdown</span>
+                  <span class="spec-pill arch-bait">🪵 spell_bait</span>
+                  <span class="spec-pill arch-pekka">🤖 pekka_control</span>
+                  <span class="spec-pill arch-bridge">⚡ bridge_spam</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="spec-item-card">
+              <div class="spec-num-badge">03</div>
+              <div class="spec-item-content">
+                <h4><i data-lucide="layers"></i> 8-Card Battle Deck</h4>
+                <p>Must specify exactly 8 distinct card IDs from the catalog with percentage weights totaling 100%.</p>
+                <div class="spec-tags">
+                  <code>- &lt;card_id&gt;: &lt;weight&gt;%</code>
+                  <span class="spec-pill text-gold">Exactly 8 cards</span>
+                  <span class="spec-pill text-green">Weights sum to 100%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="spec-item-card">
+              <div class="spec-num-badge">04</div>
+              <div class="spec-item-content">
+                <h4><i data-lucide="git-fork"></i> Preferred Lane</h4>
+                <p>Sets tactical lane bias: left bridge pressure, right bridge pressure, or dynamic balanced adaptation.</p>
+                <div class="spec-tags">
+                  <span class="spec-pill">"left"</span>
+                  <span class="spec-pill">"right"</span>
+                  <span class="spec-pill">"balanced"</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="spec-item-card full-width">
+              <div class="spec-num-badge">05</div>
+              <div class="spec-item-content">
+                <h4><i data-lucide="zap"></i> Tactical Triggers (If-Then Rules)</h4>
+                <p>Real-time autonomous conditional triggers evaluated on every 1.0s tick to trigger instant tactical responses.</p>
+                <div class="spec-rule-examples">
+                  <div class="rule-ex-row">
+                    <span class="r-badge-cond">IF CONDITION</span>
+                    <code>Elixir &gt;= 7</code>
+                    <i data-lucide="arrow-right" class="r-arrow"></i>
+                    <span class="r-badge-act">THEN ACTION</span>
+                    <code>Deploy Giant at bridge!</code>
+                  </div>
+                  <div class="rule-ex-row">
+                    <span class="r-badge-cond">IF CONDITION</span>
+                    <code>Enemy drops a heavy tank</code>
+                    <i data-lucide="arrow-right" class="r-arrow"></i>
+                    <span class="r-badge-act">THEN ACTION</span>
+                    <code>Deploy Skeletons and Musketeer on that lane!</code>
+                  </div>
+                  <div class="rule-ex-row">
+                    <span class="r-badge-cond">IF CONDITION</span>
+                    <code>Enemy Princess Tower HP &lt; 380</code>
+                    <i data-lucide="arrow-right" class="r-arrow"></i>
+                    <span class="r-badge-act">THEN ACTION</span>
+                    <code>Cast Fireball directly onto the tower!</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SUB-PANEL 3: 10 CATALOG CARDS DIRECTORY -->
+        <div class="schema-panel" id="panelSchemaCards">
+          <div class="catalog-reference-grid">
+            <div class="catalog-ref-card">
+              <span class="c-elixir">3 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>🗡️ Knight</strong>
+                <code>knight</code>
+                <small>Melee Brawler (850 HP, 95 DMG)</small>
+              </div>
+            </div>
+            <div class="catalog-ref-card">
+              <span class="c-elixir">3 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>🏹 Archers</strong>
+                <code>archers</code>
+                <small>Ranged Dual Support (280 HP, 55 DMG)</small>
+              </div>
+            </div>
+            <div class="catalog-ref-card">
+              <span class="c-elixir">5 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>🗿 Giant</strong>
+                <code>giant</code>
+                <small>Heavy Siege Tank (2000 HP, Tower Target)</small>
+              </div>
+            </div>
+            <div class="catalog-ref-card">
+              <span class="c-elixir">4 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>🎯 Musketeer</strong>
+                <code>musketeer</code>
+                <small>Long-Range Sharpshooter (400 HP, 110 DMG)</small>
+              </div>
+            </div>
+            <div class="catalog-ref-card">
+              <span class="c-elixir">4 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>🐗 Hog Rider</strong>
+                <code>hog_rider</code>
+                <small>Fast Bridge Rusher (900 HP, 130 DMG)</small>
+              </div>
+            </div>
+            <div class="catalog-ref-card">
+              <span class="c-elixir">2 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>💀 Skeletons</strong>
+                <code>skeletons</code>
+                <small>Swarm Distraction (80 HP, 40 DMG)</small>
+              </div>
+            </div>
+            <div class="catalog-ref-card">
+              <span class="c-elixir">4 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>🐲 Baby Dragon</strong>
+                <code>baby_dragon</code>
+                <small>Flying Splash Aerial (650 HP, 75 DMG)</small>
+              </div>
+            </div>
+            <div class="catalog-ref-card">
+              <span class="c-elixir">7 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>🤖 P.E.K.K.A</strong>
+                <code>pekka</code>
+                <small>Armored Juggernaut (2200 HP, 380 DMG)</small>
+              </div>
+            </div>
+            <div class="catalog-ref-card">
+              <span class="c-elixir">4 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>🔥 Fireball</strong>
+                <code>fireball</code>
+                <small>Area Spell Blast (380 DMG, Instant Area)</small>
+              </div>
+            </div>
+            <div class="catalog-ref-card">
+              <span class="c-elixir">3 <i data-lucide="droplet"></i></span>
+              <div class="c-info">
+                <strong>🪵 Goblin Barrel</strong>
+                <code>goblin_barrel</code>
+                <small>Tower Infiltration Swarm (3 Goblins, 60 DMG)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TACTICAL DECK FORGE & STRATEGY STUDIO -->
+      <div class="quick-creator-card" id="deckForgeStudio">
+        
+        <div class="creator-header">
+          <div class="creator-header-top">
+            <h3><i data-lucide="hammer"></i> TACTICAL DECK FORGE // STRATEGY STUDIO</h3>
+            <div class="forge-mode-toggle">
+              <button class="forge-mode-btn active" id="btnModeRapid"><i data-lucide="sliders"></i> Rapid Builder</button>
+              <button class="forge-mode-btn" id="btnModeEditor"><i data-lucide="file-edit"></i> Schema Code Editor &amp; Validator</button>
+            </div>
+          </div>
+          <p>Assemble a custom combat doctrine according to the 4.1 Schema Definition and immediately deploy it into the tournament roster.</p>
+        </div>
+
+        <!-- MODE 1: RAPID BUILDER -->
+        <div class="creator-form" id="forgeRapidForm">
           <div class="form-item">
             <label>Deck Title</label>
             <input type="text" id="builderKingdomName" value="Royal Vanguard Blitz" placeholder="e.g. Royal Vanguard Blitz">
@@ -228,7 +504,7 @@
             <select id="builderStrategy">
               <option value="hog_cycle">🐗 Hog Cycle (Low Elixir, Relentless Bridge Pressure)</option>
               <option value="beatdown">🗿 Giant Beatdown (Massive Tank with Snipers Behind)</option>
-              <option value="spell_bait">🪵 Spell Bait (Force Out Spells with Swarms & Barrels)</option>
+              <option value="spell_bait">🪵 Spell Bait (Force Out Spells with Swarms &amp; Barrels)</option>
               <option value="pekka_control">🤖 P.E.K.K.A Iron Defense (Heavy Counter-Pushing)</option>
               <option value="bridge_spam">⚡ Dual-Lane Bridge Spam (Relentless Split-Lane Blitz)</option>
             </select>
@@ -242,9 +518,51 @@
             </select>
           </div>
           <button id="btnBuildSkill" class="btn-build-skill">
-            <i data-lucide="sparkles"></i> Forge & Register Deck
+            <i data-lucide="sparkles"></i> Forge &amp; Register Deck
           </button>
         </div>
+
+        <!-- MODE 2: SCHEMA CODE EDITOR & LIVE VALIDATOR -->
+        <div class="forge-editor-wrapper" id="forgeEditorWrapper" style="display: none;">
+          <div class="forge-editor-toolbar">
+            <span class="editor-label"><i data-lucide="code"></i> RAW STRATEGY DOSSIER (.MD)</span>
+            <div class="editor-quick-actions">
+              <button class="btn-editor-action" id="btnEditorLoadTemplate"><i data-lucide="refresh-cw"></i> Reset to 4.1 Template</button>
+              <button class="btn-editor-action" id="btnEditorValidate"><i data-lucide="check-circle-2"></i> Validate Schema</button>
+            </div>
+          </div>
+          <textarea id="forgeCustomMarkdown" class="forge-markdown-textarea" spellcheck="false" placeholder="Write or paste your 4.1 Schema markdown skill dossier here..."></textarea>
+          
+          <!-- Validation Feedback Box -->
+          <div class="validation-feedback-box" id="validationFeedbackBox" style="display: none;">
+            <div class="val-header">
+              <span class="val-badge" id="valStatusBadge">VALID</span>
+              <span class="val-title" id="valStatusTitle">Schema Verification Results</span>
+            </div>
+            <div class="val-checklist" id="valChecklist">
+              <!-- Checklist populated dynamically -->
+            </div>
+          </div>
+
+          <div class="forge-editor-actions">
+            <div class="form-item inline-filename">
+              <label>Filename:</label>
+              <input type="text" id="forgeCustomFilename" value="my_custom_doctrine.md" placeholder="e.g. my_custom_doctrine.md">
+            </div>
+            <div class="forge-deploy-buttons">
+              <button id="btnSaveCustomSkill" class="btn-editor-deploy btn-save-lib">
+                <i data-lucide="save"></i> Save to Library
+              </button>
+              <button id="btnDeployCustomRed" class="btn-editor-deploy btn-deploy-red">
+                <i data-lucide="shield"></i> Save &amp; Equip Red
+              </button>
+              <button id="btnDeployCustomBlue" class="btn-editor-deploy btn-deploy-blue">
+                <i data-lucide="shield"></i> Save &amp; Equip Blue
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div id="builderStatusMsg" class="builder-status-msg"></div>
       </div>
 

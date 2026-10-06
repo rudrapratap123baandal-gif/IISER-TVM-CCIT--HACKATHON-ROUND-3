@@ -180,7 +180,7 @@ def parse_clash_skill(content: str) -> ClashSkillProfile:
             name = name_m.group(1).strip()
             continue
 
-        author_m = re.match(r"^#\s*(?:Author|Team|Player|Ruler)\s*:\s*(.+)$", stripped, re.IGNORECASE)
+        author_m = re.match(r"^#\s*(?:Author|Team|Player(?:\s*[\/&]\s*Author)?|Ruler)\s*:\s*(.+)$", stripped, re.IGNORECASE)
         if author_m:
             author = author_m.group(1).strip()
             continue
@@ -323,17 +323,57 @@ def list_available_kingdom_skills(skills_dir: str = "skills") -> List[Dict[str, 
 def validate_kingdom_skill_content(content: str) -> Dict[str, Any]:
     errors = []
     warnings = []
+    sections_status = {
+        "header_metadata": False,
+        "archetype": False,
+        "deck": False,
+        "lane": False,
+        "triggers": False
+    }
 
     if len(content.strip()) < 30:
         errors.append("Skill file is too short (must be at least 30 characters).")
 
-    profile = parse_clash_skill(content)
-    if len(profile.deck) < 8:
-        warnings.append(f"Deck only specified {len(profile.deck)} cards; padded to 8.")
+    try:
+        profile = parse_clash_skill(content)
+        
+        has_name = bool(profile.name and profile.name != "Unknown Commander")
+        has_author = bool(profile.author and profile.author != "Anonymous")
+        has_war_cry = bool(profile.war_cry and profile.war_cry != "For the Crown!")
+        if has_name or has_author or has_war_cry:
+            sections_status["header_metadata"] = True
+        else:
+            warnings.append("Header metadata missing or default (Deck Name, Player/Author, War Cry).")
 
-    return {
-        "valid": len(errors) == 0,
-        "errors": errors,
-        "warnings": warnings,
-        "profile": profile.to_dict()
-    }
+        if profile.archetype:
+            sections_status["archetype"] = True
+
+        if len(profile.deck) >= 8:
+            sections_status["deck"] = True
+        else:
+            warnings.append(f"Deck specified {len(profile.deck)} cards; 8 required by 4.1 schema.")
+
+        if profile.preferred_lane in ["left", "right", "balanced"]:
+            sections_status["lane"] = True
+
+        if len(profile.triggers) >= 1:
+            sections_status["triggers"] = True
+        else:
+            warnings.append("No tactical triggers (IF-THEN rules) detected.")
+
+        return {
+            "valid": len(errors) == 0,
+            "errors": errors,
+            "warnings": warnings,
+            "sections_status": sections_status,
+            "profile": profile.to_dict()
+        }
+    except Exception as e:
+        errors.append(f"Parse error: {str(e)}")
+        return {
+            "valid": False,
+            "errors": errors,
+            "warnings": warnings,
+            "sections_status": sections_status,
+            "profile": None
+        }

@@ -2291,34 +2291,211 @@ async function refreshSkillPill(side) {
 }
 
 // Tactical Deck Forge
+// ==============================================================
+// 4.1 SCHEMA DEFINITION & STRATEGY STUDIO LOGIC
+// ==============================================================
+const SCHEMA_4_1_TEMPLATE = `# Deck Name: Royal Vanguard
+# Player / Author: Team Champion
+# War Cry: "Victory for the Crown!"
+
+## Archetype & Playstyle
+Fast-paced tempo and counter-assault doctrine. Control the bridges with disciplined defense, then launch decisive counter-pushes down the exposed flank.
+
+## 8-Card Battle Deck
+- knight: 20%
+- archers: 15%
+- giant: 20%
+- musketeer: 15%
+- hog_rider: 15%
+- skeletons: 5%
+- baby_dragon: 5%
+- fireball: 5%
+
+## Preferred Lane
+balanced
+
+## Tactical Triggers (If-Then Rules)
+1. IF Elixir >= 7 -> Deploy primary tank (Giant or Hog Rider) to begin a push!
+2. IF enemy drops a heavy tank -> Deploy Skeletons and Musketeer on that lane to defend!
+3. IF enemy Princess Tower HP < 380 -> Cast Fireball directly onto the tower to claim the Crown!
+4. IF enemy attacks left lane -> Counter-attack with Hog Rider on the opposite right lane!
+`;
+
+function copyTextToClipboard(text, successCallback) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(successCallback).catch(() => {
+      fallbackCopyText(text, successCallback);
+    });
+  } else {
+    fallbackCopyText(text, successCallback);
+  }
+}
+
+function fallbackCopyText(text, successCallback) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand('copy');
+    if (successCallback) successCallback();
+  } catch (err) {
+    console.error('Fallback copy failed', err);
+  }
+  document.body.removeChild(ta);
+}
+
+function setupSchemaDefinitionUI() {
+  // 1. Copy Buttons
+  const btnCopySchema = document.getElementById('btnCopySchema');
+  const btnCodeWindowCopy = document.getElementById('btnCodeWindowCopy');
+  const copyLabel = document.getElementById('copySchemaBtnText');
+
+  const onCopySuccess = () => {
+    if (copyLabel) copyLabel.textContent = '✓ Copied!';
+    if (btnCopySchema) btnCopySchema.style.borderColor = '#10b981';
+    if (btnCodeWindowCopy) btnCodeWindowCopy.innerHTML = '<i data-lucide="check"></i>';
+    if (window.lucide) window.lucide.createIcons();
+    playClashSound('click');
+    setTimeout(() => {
+      if (copyLabel) copyLabel.textContent = 'Copy Template';
+      if (btnCopySchema) btnCopySchema.style.borderColor = '';
+      if (btnCodeWindowCopy) btnCodeWindowCopy.innerHTML = '<i data-lucide="copy"></i>';
+      if (window.lucide) window.lucide.createIcons();
+    }, 2000);
+  };
+
+  if (btnCopySchema) {
+    btnCopySchema.addEventListener('click', () => {
+      copyTextToClipboard(SCHEMA_4_1_TEMPLATE, onCopySuccess);
+    });
+  }
+
+  if (btnCodeWindowCopy) {
+    btnCodeWindowCopy.addEventListener('click', () => {
+      copyTextToClipboard(SCHEMA_4_1_TEMPLATE, onCopySuccess);
+    });
+  }
+
+  // 2. Download .md template
+  const btnDownload = document.getElementById('btnDownloadSchema');
+  if (btnDownload) {
+    btnDownload.addEventListener('click', () => {
+      const blob = new Blob([SCHEMA_4_1_TEMPLATE], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'skill_schema_template.md';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      playClashSound('click');
+    });
+  }
+
+  // 3. Schema Subnav Tabs
+  const schemaTabs = document.querySelectorAll('.schema-tab');
+  schemaTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      schemaTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.schematab;
+      document.querySelectorAll('.schema-panel').forEach(p => p.classList.remove('active'));
+      if (target === 'blueprint') {
+        document.getElementById('panelSchemaBlueprint')?.classList.add('active');
+      } else if (target === 'breakdown') {
+        document.getElementById('panelSchemaBreakdown')?.classList.add('active');
+      } else if (target === 'cards') {
+        document.getElementById('panelSchemaCards')?.classList.add('active');
+      }
+      if (window.lucide) window.lucide.createIcons();
+      playClashSound('click');
+    });
+  });
+
+  // 4. Load Schema into Forge
+  const btnLoadForge = document.getElementById('btnLoadSchemaToForge');
+  if (btnLoadForge) {
+    btnLoadForge.addEventListener('click', () => {
+      const btnModeEditor = document.getElementById('btnModeEditor');
+      if (btnModeEditor) btnModeEditor.click();
+      const textarea = document.getElementById('forgeCustomMarkdown');
+      if (textarea && !textarea.value.trim()) {
+        textarea.value = SCHEMA_4_1_TEMPLATE;
+      }
+      const studio = document.getElementById('deckForgeStudio');
+      if (studio) {
+        studio.scrollIntoView({ behavior: 'smooth' });
+      }
+      playClashSound('click');
+    });
+  }
+}
+
+// Tactical Deck Forge & Studio Logic
 function setupNoCodeBuilder() {
+  setupSchemaDefinitionUI();
+
+  // Mode Toggling
+  const btnModeRapid = document.getElementById('btnModeRapid');
+  const btnModeEditor = document.getElementById('btnModeEditor');
+  const formRapid = document.getElementById('forgeRapidForm');
+  const wrapperEditor = document.getElementById('forgeEditorWrapper');
+  const txtEditor = document.getElementById('forgeCustomMarkdown');
+
+  if (btnModeRapid && btnModeEditor && formRapid && wrapperEditor) {
+    btnModeRapid.addEventListener('click', () => {
+      btnModeRapid.classList.add('active');
+      btnModeEditor.classList.remove('active');
+      formRapid.style.display = 'grid';
+      wrapperEditor.style.display = 'none';
+      playClashSound('click');
+    });
+
+    btnModeEditor.addEventListener('click', () => {
+      btnModeEditor.classList.add('active');
+      btnModeRapid.classList.remove('active');
+      formRapid.style.display = 'none';
+      wrapperEditor.style.display = 'flex';
+      if (txtEditor && !txtEditor.value.trim()) {
+        txtEditor.value = SCHEMA_4_1_TEMPLATE;
+      }
+      if (window.lucide) window.lucide.createIcons();
+      playClashSound('click');
+    });
+  }
+
+  // Rapid Builder Button
   const btnBuild = document.getElementById('btnBuildSkill');
-  if (!btnBuild) return;
+  if (btnBuild) {
+    btnBuild.addEventListener('click', async () => {
+      const deckName = document.getElementById('builderKingdomName')?.value.trim() || 'Royal Vanguard';
+      const author = document.getElementById('builderRulerName')?.value.trim() || 'Commander Valerius';
+      const arch = document.getElementById('builderStrategy')?.value || 'hog_cycle';
+      const lane = document.getElementById('builderLane')?.value || 'balanced';
 
-  btnBuild.addEventListener('click', async () => {
-    const deckName = document.getElementById('builderKingdomName').value.trim() || 'Royal Vanguard';
-    const author = document.getElementById('builderRulerName').value.trim() || 'Commander Valerius';
-    const arch = document.getElementById('builderStrategy').value;
-    const lane = document.getElementById('builderLane').value;
+      const deckTemplates = {
+        hog_cycle: ["hog_rider", "musketeer", "knight", "skeletons", "fireball", "archers", "baby_dragon", "goblin_barrel"],
+        beatdown: ["giant", "baby_dragon", "musketeer", "knight", "fireball", "archers", "skeletons", "hog_rider"],
+        spell_bait: ["goblin_barrel", "knight", "skeletons", "archers", "fireball", "musketeer", "baby_dragon", "hog_rider"],
+        pekka_control: ["pekka", "baby_dragon", "musketeer", "knight", "fireball", "skeletons", "archers", "hog_rider"],
+        bridge_spam: ["hog_rider", "knight", "goblin_barrel", "baby_dragon", "archers", "skeletons", "fireball", "musketeer"]
+      };
 
-    const deckTemplates = {
-      hog_cycle: ["hog_rider", "musketeer", "knight", "skeletons", "fireball", "archers", "baby_dragon", "goblin_barrel"],
-      beatdown: ["giant", "baby_dragon", "musketeer", "knight", "fireball", "archers", "skeletons", "hog_rider"],
-      spell_bait: ["goblin_barrel", "knight", "skeletons", "archers", "fireball", "musketeer", "baby_dragon", "hog_rider"],
-      pekka_control: ["pekka", "baby_dragon", "musketeer", "knight", "fireball", "skeletons", "archers", "hog_rider"],
-      bridge_spam: ["hog_rider", "knight", "goblin_barrel", "baby_dragon", "archers", "skeletons", "fireball", "musketeer"]
-    };
-
-    const cards = deckTemplates[arch] || deckTemplates.hog_cycle;
-    const content = `# Deck Name: ${deckName}
+      const cards = deckTemplates[arch] || deckTemplates.hog_cycle;
+      const content = `# Deck Name: ${deckName}
 # Player / Author: ${author}
 # War Cry: "Victory for the Crown!"
 
 ## Archetype & Playstyle
-${arch.replace('_', ' ').toUpperCase()} doctrine configured for the ${lane} lane.
+${arch.replace('_', ' ').toUpperCase()} doctrine configured for the ${lane} lane according to 4.1 Schema.
 
 ## 8-Card Battle Deck
-${cards.map(c => `- ${c}: 15%`).join('\n')}
+${cards.map((c, i) => `- ${c}: ${i < 4 ? '15%' : '10%'}`).join('\n')}
 
 ## Preferred Lane
 ${lane}
@@ -2329,32 +2506,176 @@ ${lane}
 3. IF enemy tower < 380 HP -> Cast Fireball to finish the Crown!
 `;
 
-    const cleanFilename = deckName.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_deck.md';
+      const cleanFilename = deckName.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_deck.md';
+      await saveAndEquipSkill(cleanFilename, content, 'Red');
+    });
+  }
 
-    try {
-      const res = await fetch('/api/skills/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: cleanFilename, content })
-      });
-      const data = await res.json();
-      await fetchSkills();
+  // Reset to 4.1 Template in Editor
+  const btnResetTemplate = document.getElementById('btnEditorLoadTemplate');
+  if (btnResetTemplate && txtEditor) {
+    btnResetTemplate.addEventListener('click', () => {
+      txtEditor.value = SCHEMA_4_1_TEMPLATE;
+      const statusBox = document.getElementById('validationFeedbackBox');
+      if (statusBox) statusBox.style.display = 'none';
+      playClashSound('click');
+    });
+  }
 
+  // Validate Schema in Editor
+  const btnValidate = document.getElementById('btnEditorValidate');
+  if (btnValidate && txtEditor) {
+    btnValidate.addEventListener('click', async () => {
+      const content = txtEditor.value.trim();
+      if (!content) {
+        alert('Please enter or paste your skill markdown before validating.');
+        return;
+      }
+      await runSchemaValidation(content);
+    });
+  }
+
+  // Deploy Buttons
+  const btnSaveLib = document.getElementById('btnSaveCustomSkill');
+  const btnDeployRed = document.getElementById('btnDeployCustomRed');
+  const btnDeployBlue = document.getElementById('btnDeployCustomBlue');
+  const inputFilename = document.getElementById('forgeCustomFilename');
+
+  const getDossierData = () => {
+    let fn = inputFilename ? inputFilename.value.trim() : 'custom_doctrine.md';
+    if (!fn.endsWith('.md')) fn += '.md';
+    fn = fn.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    const content = txtEditor ? txtEditor.value.trim() : '';
+    return { filename: fn, content };
+  };
+
+  if (btnSaveLib) {
+    btnSaveLib.addEventListener('click', async () => {
+      const { filename, content } = getDossierData();
+      if (!content) return alert('Dossier content cannot be empty.');
+      await saveAndEquipSkill(filename, content, null);
+    });
+  }
+
+  if (btnDeployRed) {
+    btnDeployRed.addEventListener('click', async () => {
+      const { filename, content } = getDossierData();
+      if (!content) return alert('Dossier content cannot be empty.');
+      await saveAndEquipSkill(filename, content, 'Red');
+    });
+  }
+
+  if (btnDeployBlue) {
+    btnDeployBlue.addEventListener('click', async () => {
+      const { filename, content } = getDossierData();
+      if (!content) return alert('Dossier content cannot be empty.');
+      await saveAndEquipSkill(filename, content, 'Blue');
+    });
+  }
+}
+
+async function runSchemaValidation(content) {
+  const feedbackBox = document.getElementById('validationFeedbackBox');
+  const valBadge = document.getElementById('valStatusBadge');
+  const valTitle = document.getElementById('valStatusTitle');
+  const checklist = document.getElementById('valChecklist');
+  if (!feedbackBox || !valBadge || !checklist) return;
+
+  try {
+    const res = await fetch('/api/skills/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+    const data = await res.json();
+    feedbackBox.style.display = 'block';
+
+    const sec = data.sections_status || {};
+    const prof = data.profile || {};
+    const deckCount = (prof.deck || []).length;
+    const trigCount = (prof.triggers || []).length;
+
+    if (data.valid) {
+      feedbackBox.className = 'validation-feedback-box valid-schema';
+      valBadge.className = 'val-badge';
+      valBadge.textContent = '4.1 SCHEMA VALID';
+      valTitle.textContent = `✓ "${prof.name || 'Custom Doctrine'}" passed verification. Ready to deploy!`;
+    } else {
+      feedbackBox.className = 'validation-feedback-box invalid-schema';
+      valBadge.className = 'val-badge val-err';
+      valBadge.textContent = 'SCHEMA ISSUES';
+      valTitle.textContent = data.errors?.join(', ') || 'Validation errors detected';
+    }
+
+    checklist.innerHTML = `
+      <div class="val-check-item ${sec.header_metadata ? 'ok' : 'fail'}">
+        <i data-lucide="${sec.header_metadata ? 'check-circle' : 'alert-circle'}"></i>
+        <span>Header: <strong>${prof.name || 'Missing'}</strong> (${prof.author || 'Anonymous'})</span>
+      </div>
+      <div class="val-check-item ${sec.archetype ? 'ok' : 'fail'}">
+        <i data-lucide="${sec.archetype ? 'check-circle' : 'alert-circle'}"></i>
+        <span>Archetype: <strong>${(prof.archetype || 'None').toUpperCase()}</strong></span>
+      </div>
+      <div class="val-check-item ${deckCount >= 8 ? 'ok' : 'fail'}">
+        <i data-lucide="${deckCount >= 8 ? 'check-circle' : 'alert-circle'}"></i>
+        <span>8-Card Deck: <strong>${deckCount}/8 Cards</strong></span>
+      </div>
+      <div class="val-check-item ${sec.lane ? 'ok' : 'fail'}">
+        <i data-lucide="${sec.lane ? 'check-circle' : 'alert-circle'}"></i>
+        <span>Lane Bias: <strong>${prof.preferred_lane || 'balanced'}</strong></span>
+      </div>
+      <div class="val-check-item ${trigCount >= 1 ? 'ok' : 'fail'}">
+        <i data-lucide="${trigCount >= 1 ? 'check-circle' : 'alert-circle'}"></i>
+        <span>Triggers: <strong>${trigCount} Rules Active</strong></span>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    playClashSound(data.valid ? 'crown' : 'drop');
+  } catch (err) {
+    feedbackBox.style.display = 'block';
+    feedbackBox.className = 'validation-feedback-box invalid-schema';
+    valBadge.className = 'val-badge val-err';
+    valBadge.textContent = 'ERROR';
+    valTitle.textContent = `Server error validating: ${err}`;
+  }
+}
+
+async function saveAndEquipSkill(filename, content, equipSide) {
+  try {
+    const res = await fetch('/api/skills/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, content })
+    });
+    const data = await res.json();
+    await fetchSkills();
+
+    if (equipSide === 'Red') {
       const selectRed = document.getElementById('selectRedSkill');
       if (selectRed) {
         selectRed.value = data.filename;
         refreshSkillPill('Red');
       }
-
-      const statusEl = document.getElementById('builderStatusMsg');
-      if (statusEl) {
-        statusEl.textContent = `✓ Registered "${cleanFilename}" and equipped for Red Commander!`;
+    } else if (equipSide === 'Blue') {
+      const selectBlue = document.getElementById('selectBlueSkill');
+      if (selectBlue) {
+        selectBlue.value = data.filename;
+        refreshSkillPill('Blue');
       }
-      playClashSound('crown');
-    } catch (e) {
-      alert(`Error generating deck: ${e}`);
     }
-  });
+
+    const statusEl = document.getElementById('builderStatusMsg');
+    if (statusEl) {
+      if (equipSide) {
+        statusEl.textContent = `✓ Saved "${data.filename}" and equipped for ${equipSide} Commander!`;
+      } else {
+        statusEl.textContent = `✓ Saved "${data.filename}" to Tournament Skill Library!`;
+      }
+    }
+    playClashSound('crown');
+  } catch (e) {
+    alert(`Error saving skill dossier: ${e}`);
+  }
 }
 
 async function lockAndStartMatch() {
