@@ -22,6 +22,29 @@ let lastMatchStatus = null;
 let processedEventCount = 0;
 let lastProcessedRound = -1;
 
+let toastTimer = null;
+function showToast(message, type = 'info') {
+  let toast = document.getElementById('clashToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'clashToast';
+    toast.className = 'clash-toast';
+    document.body.appendChild(toast);
+  }
+  let icon = 'ℹ️';
+  if (type === 'success') icon = '✓';
+  else if (type === 'warning') icon = '⚠️';
+  else if (type === 'error') icon = '✕';
+
+  toast.innerHTML = `<span class="toast-icon">${icon}</span> <span>${message}</span>`;
+  toast.className = `clash-toast show ${type}`;
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2200);
+}
+
 // Card Catalog Definition for Client
 const CARD_PROTOS = {
   knight: { name: 'Knight', elixir: 3, icon: '🗡️', type: 'Melee Brawler', rarity: 'common', category: 'troop', hp: 850, dmg: 95, speedStr: 'Medium (8.0 tiles/s)', targetStr: 'Ground & Air (Nearest)', desc: 'Tough frontline melee fighter. Solid damage and excellent counter-push potential.', synergies: 'Archers, Musketeer', counters: 'Giant, Hog Rider' },
@@ -720,16 +743,22 @@ function renderState(state) {
     if (state.status === 'running') {
       btnStart.disabled = true;
       btnPause.disabled = false;
-      btnPause.textContent = '⏸ PAUSE';
+      btnPause.innerHTML = '<i data-lucide="pause"></i> PAUSE';
     } else if (state.status === 'paused') {
       btnStart.disabled = true;
       btnPause.disabled = false;
-      btnPause.textContent = '▶ RESUME';
+      btnPause.innerHTML = '<i data-lucide="play"></i> RESUME';
     } else {
       btnStart.disabled = false;
       btnPause.disabled = true;
-      btnPause.textContent = '⏸ PAUSE';
+      btnPause.innerHTML = '<i data-lucide="pause"></i> PAUSE';
     }
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  // Sync Speed Multiplier Buttons
+  if (state.speed_multiplier !== undefined && state.speed_multiplier !== null) {
+    updateSpeedButtons(state.speed_multiplier);
   }
 
   // 6. Red Player Telemetry
@@ -1308,19 +1337,19 @@ function renderCardsCatalog() {
       chip.type = 'button';
       chip.className = 'card-id-chip';
       chip.title = `Click to copy '${k}'`;
-      chip.innerHTML = `${c.icon} <code>${k}</code>`;
       chip.onclick = () => {
-        navigator.clipboard.writeText(k);
-        const prev = chip.innerHTML;
-        chip.innerHTML = `✓ Copied!`;
-        chip.style.borderColor = '#4ade80';
-        chip.style.color = '#4ade80';
-        setTimeout(() => {
-          chip.innerHTML = prev;
-          chip.style.borderColor = '';
-          chip.style.color = '';
-        }, 1200);
-        playClashSound('deploy');
+        copyTextToClipboard(k, () => {
+          const prev = chip.innerHTML;
+          chip.innerHTML = `✓ Copied!`;
+          chip.style.borderColor = '#4ade80';
+          chip.style.color = '#4ade80';
+          setTimeout(() => {
+            chip.innerHTML = prev;
+            chip.style.borderColor = '';
+            chip.style.color = '';
+          }, 1200);
+          playClashSound('deploy');
+        });
       };
       chipContainer.appendChild(chip);
     });
@@ -1420,9 +1449,14 @@ window.openCard3dInspector = function(cardId) {
   const btnCopyModal = document.getElementById('btnCopyModalCardId');
   if (btnCopyModal) {
     btnCopyModal.onclick = () => {
-      navigator.clipboard.writeText(cardId);
-      btnCopyModal.innerHTML = '✓ Copied';
-      setTimeout(() => btnCopyModal.innerHTML = '<i data-lucide="copy"></i> Copy', 1200);
+      copyTextToClipboard(cardId, () => {
+        btnCopyModal.innerHTML = '<i data-lucide="check"></i> Copied';
+        if (window.lucide) window.lucide.createIcons();
+        setTimeout(() => {
+          btnCopyModal.innerHTML = '<i data-lucide="copy"></i> Copy';
+          if (window.lucide) window.lucide.createIcons();
+        }, 1200);
+      });
     };
   }
 
@@ -2294,7 +2328,38 @@ async function refreshSkillPill(side) {
 // ==============================================================
 // 4.1 SCHEMA DEFINITION & STRATEGY STUDIO LOGIC
 // ==============================================================
-const SCHEMA_4_1_TEMPLATE = `# Deck Name: Royal Vanguard
+const SCHEMA_4_1_TEMPLATE = `# Deck Name: <Kingdom / Commander Title>
+# Player / Author: <Team Name>
+# War Cry: "<Short Custom Battle Cry>"
+
+## Archetype & Playstyle
+<Brief description of strategic doctrine: cycle, beatdown, spell_bait, pekka_control, or bridge_spam>
+
+## 8-Card Battle Deck
+# Select exactly 8 cards from the catalog with percentage weights (must total 100%):
+# Available Cards: knight (3e), archers (3e), giant (5e), musketeer (4e), hog_rider (4e),
+#                  skeletons (2e), baby_dragon (4e), pekka (7e), fireball (4e), goblin_barrel (3e)
+- <card_id_1>: <weight_percentage>%
+- <card_id_2>: <weight_percentage>%
+- <card_id_3>: <weight_percentage>%
+- <card_id_4>: <weight_percentage>%
+- <card_id_5>: <weight_percentage>%
+- <card_id_6>: <weight_percentage>%
+- <card_id_7>: <weight_percentage>%
+- <card_id_8>: <weight_percentage>%
+
+## Preferred Lane
+<"left", "right", or "balanced">
+
+## Tactical Triggers (If-Then Rules)
+# Priority rules evaluated in real-time each simulation tick (top-to-bottom):
+1. IF <Condition> -> <Action>!
+2. IF <Condition> -> <Action>!
+3. IF <Condition> -> <Action>!
+4. IF <Condition> -> <Action>!
+`;
+
+const SCHEMA_4_1_EXAMPLE = `# Deck Name: Royal Vanguard
 # Player / Author: Team Champion
 # War Cry: "Victory for the Crown!"
 
@@ -2321,38 +2386,63 @@ balanced
 4. IF enemy attacks left lane -> Counter-attack with Hog Rider on the opposite right lane!
 `;
 
-function copyTextToClipboard(text, successCallback) {
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(successCallback).catch(() => {
-      fallbackCopyText(text, successCallback);
-    });
-  } else {
-    fallbackCopyText(text, successCallback);
+async function copyTextToClipboard(text, successCallback) {
+  let copied = false;
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    } catch (err) {
+      console.warn('navigator.clipboard.writeText failed, attempting in-viewport textarea fallback', err);
+    }
   }
-}
 
-function fallbackCopyText(text, successCallback) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.left = '-9999px';
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
-  try {
-    document.execCommand('copy');
-    if (successCallback) successCallback();
-  } catch (err) {
-    console.error('Fallback copy failed', err);
+  if (!copied) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.left = '0';
+      ta.style.width = '2em';
+      ta.style.height = '2em';
+      ta.style.padding = '0';
+      ta.style.border = 'none';
+      ta.style.outline = 'none';
+      ta.style.boxShadow = 'none';
+      ta.style.background = 'transparent';
+      ta.style.opacity = '0.01';
+      ta.style.zIndex = '99999';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      copied = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (fallbackErr) {
+      console.error('execCommand fallback copy failed:', fallbackErr);
+      copied = false;
+    }
   }
-  document.body.removeChild(ta);
+
+  if (copied) {
+    if (successCallback) successCallback();
+    showToast('Copied to clipboard!', 'success');
+  } else {
+    window.prompt('Copy to clipboard (Ctrl+C, Enter):', text);
+    if (successCallback) successCallback();
+    showToast('Copied via text dialog!', 'info');
+  }
 }
 
 function setupSchemaDefinitionUI() {
   // 1. Copy Buttons
   const btnCopySchema = document.getElementById('btnCopySchema');
+  const btnCopyExample = document.getElementById('btnCopyExample');
   const btnCodeWindowCopy = document.getElementById('btnCodeWindowCopy');
   const copyLabel = document.getElementById('copySchemaBtnText');
+  const copyExampleLabel = document.getElementById('copyExampleBtnText');
 
   const onCopySuccess = () => {
     if (copyLabel) copyLabel.textContent = '✓ Copied!';
@@ -2360,6 +2450,7 @@ function setupSchemaDefinitionUI() {
     if (btnCodeWindowCopy) btnCodeWindowCopy.innerHTML = '<i data-lucide="check"></i>';
     if (window.lucide) window.lucide.createIcons();
     playClashSound('click');
+    showToast('4.1 Schema Template copied to clipboard!', 'success');
     setTimeout(() => {
       if (copyLabel) copyLabel.textContent = 'Copy Template';
       if (btnCopySchema) btnCopySchema.style.borderColor = '';
@@ -2368,9 +2459,26 @@ function setupSchemaDefinitionUI() {
     }, 2000);
   };
 
+  const onCopyExampleSuccess = () => {
+    if (copyExampleLabel) copyExampleLabel.textContent = '✓ Copied!';
+    if (btnCopyExample) btnCopyExample.style.borderColor = '#10b981';
+    playClashSound('click');
+    showToast('Royal Vanguard reference deck copied to clipboard!', 'success');
+    setTimeout(() => {
+      if (copyExampleLabel) copyExampleLabel.textContent = 'Copy Example';
+      if (btnCopyExample) btnCopyExample.style.borderColor = '';
+    }, 2000);
+  };
+
   if (btnCopySchema) {
     btnCopySchema.addEventListener('click', () => {
       copyTextToClipboard(SCHEMA_4_1_TEMPLATE, onCopySuccess);
+    });
+  }
+
+  if (btnCopyExample) {
+    btnCopyExample.addEventListener('click', () => {
+      copyTextToClipboard(SCHEMA_4_1_EXAMPLE, onCopyExampleSuccess);
     });
   }
 
@@ -2394,6 +2502,7 @@ function setupSchemaDefinitionUI() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       playClashSound('click');
+      showToast('Downloaded skill_schema_template.md', 'success');
     });
   }
 
@@ -2432,6 +2541,7 @@ function setupSchemaDefinitionUI() {
         studio.scrollIntoView({ behavior: 'smooth' });
       }
       playClashSound('click');
+      showToast('Opened 4.1 Schema Template in Deck Forge Studio', 'info');
     });
   }
 }
@@ -2519,6 +2629,19 @@ ${lane}
       const statusBox = document.getElementById('validationFeedbackBox');
       if (statusBox) statusBox.style.display = 'none';
       playClashSound('click');
+      showToast('Loaded 4.1 Schema Template into Editor', 'info');
+    });
+  }
+
+  // Load 4.1 Working Example in Editor
+  const btnLoadExample = document.getElementById('btnEditorLoadExample');
+  if (btnLoadExample && txtEditor) {
+    btnLoadExample.addEventListener('click', () => {
+      txtEditor.value = SCHEMA_4_1_EXAMPLE;
+      const statusBox = document.getElementById('validationFeedbackBox');
+      if (statusBox) statusBox.style.display = 'none';
+      playClashSound('click');
+      showToast('Loaded Royal Vanguard Reference Deck into Editor', 'info');
     });
   }
 
@@ -2760,16 +2883,31 @@ async function resetBattle() {
   }
 }
 
+function updateSpeedButtons(speed) {
+  const numSpeed = parseFloat(speed) || 1.0;
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    const btnSpeed = parseFloat(btn.dataset.speed) || 1.0;
+    btn.classList.toggle('active', Math.abs(btnSpeed - numSpeed) < 0.1);
+  });
+}
+
 async function setSpeed(speed) {
+  const numSpeed = parseFloat(speed) || 1.0;
+  updateSpeedButtons(numSpeed);
+  playClashSound('click');
+  showToast(`Match playback speed: ${numSpeed}x`, 'info');
   try {
-    await fetch('/api/match/speed', {
+    const res = await fetch('/api/match/speed', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ speed: parseFloat(speed) })
+      body: JSON.stringify({ speed: numSpeed })
     });
-    document.querySelectorAll('.speed-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.speed === speed);
-    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.speed !== undefined) {
+        updateSpeedButtons(data.speed);
+      }
+    }
   } catch (e) {
     console.error('Failed to set speed:', e);
   }
@@ -2852,7 +2990,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Speed Buttons
   document.querySelectorAll('.speed-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => setSpeed(e.target.dataset.speed));
+    btn.addEventListener('click', () => setSpeed(btn.dataset.speed));
   });
 
   // Tournament Bracket Buttons
@@ -2888,6 +3026,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupUploadDropzones();
   setupNoCodeBuilder();
   renderCardsCatalog();
+  updateSpeedButtons(1.0);
 
   await fetchSkills();
   await fetchTournamentState();

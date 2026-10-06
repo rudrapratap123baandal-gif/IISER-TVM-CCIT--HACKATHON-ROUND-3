@@ -28,10 +28,10 @@
 
     <!-- Navigation Tabs -->
     <nav class="nav-tabs" id="mainNavTabs">
-      <button class="nav-tab active" id="btnViewLobby"><i data-lucide="layout-grid"></i> STRATEGY FORGE</button>
-      <button class="nav-tab" id="btnViewArena"><i data-lucide="shield"></i> BATTLE ARENA</button>
-      <button class="nav-tab" id="btnViewBracket"><i data-lucide="trophy"></i> TOURNAMENT</button>
-      <button class="nav-tab" id="btnViewRules"><i data-lucide="book-open"></i> COMPENDIUM</button>
+      <button class="nav-tab active" id="btnViewLobby"><i data-lucide="layout-grid"></i> FORGE</button>
+      <button class="nav-tab" id="btnViewArena"><i data-lucide="shield"></i> ARENA</button>
+      <button class="nav-tab" id="btnViewBracket"><i data-lucide="trophy"></i> BRACKET</button>
+      <button class="nav-tab" id="btnViewRules"><i data-lucide="book-open"></i> RULES</button>
     </nav>
 
     <!-- CENTER ESPORTS BATTLE HUD (Strategy vs Strategy & Live Telemetry) -->
@@ -227,8 +227,11 @@
           </div>
 
           <div class="schema-header-actions">
-            <button class="schema-action-btn" id="btnCopySchema" title="Copy Raw Markdown Schema to Clipboard">
+            <button class="schema-action-btn" id="btnCopySchema" title="Copy Blank 4.1 Schema Template">
               <i data-lucide="copy"></i> <span id="copySchemaBtnText">Copy Template</span>
+            </button>
+            <button class="schema-action-btn" id="btnCopyExample" title="Copy Working Reference Deck (Royal Vanguard)">
+              <i data-lucide="file-text"></i> <span id="copyExampleBtnText">Copy Example</span>
             </button>
             <button class="schema-action-btn btn-action-accent" id="btnLoadSchemaToForge" title="Load into Live Dossier Forge">
               <i data-lucide="sparkles"></i> <span>Open in Forge</span>
@@ -527,7 +530,8 @@
           <div class="forge-editor-toolbar">
             <span class="editor-label"><i data-lucide="code"></i> RAW STRATEGY DOSSIER (.MD)</span>
             <div class="editor-quick-actions">
-              <button class="btn-editor-action" id="btnEditorLoadTemplate"><i data-lucide="refresh-cw"></i> Reset to 4.1 Template</button>
+              <button class="btn-editor-action" id="btnEditorLoadTemplate"><i data-lucide="refresh-cw"></i> Load Template</button>
+              <button class="btn-editor-action" id="btnEditorLoadExample"><i data-lucide="file-text"></i> Load Example Deck</button>
               <button class="btn-editor-action" id="btnEditorValidate"><i data-lucide="check-circle-2"></i> Validate Schema</button>
             </div>
           </div>
@@ -728,7 +732,7 @@
           <!-- RED SIDE (NORTH 0% - 47%) -->
           <div class="pitch-side pitch-red-side">
             <!-- Red King Tower (Center Back) -->
-            <div class="tower-entity king-tower red-tower" id="tower_red_king" style="left: 50%; top: 7%;">
+            <div class="tower-entity king-tower red-tower" id="tower_red_king" style="left: 50%; top: 9.5%;">
               <!-- Floating Clash Royale Health Gauge (Matching Reference Image) -->
               <div class="tower-cr-health-bar">
                 <span class="cr-crown-shield">👑</span>
@@ -799,7 +803,11 @@
                 <div class="tower-roof-deck princess-deck">
                   <div class="princess-character red-princess-char">
                     <div class="princess-bow">🏹</div>
-                    <div class="princess-avatar">👸</div>
+                    <div class="princess-figure">
+                      <div class="princess-crown-head">👑</div>
+                      <div class="princess-face">👧</div>
+                      <div class="princess-robe red-dress"></div>
+                    </div>
                   </div>
                 </div>
 
@@ -841,7 +849,11 @@
                 <div class="tower-roof-deck princess-deck">
                   <div class="princess-character red-princess-char">
                     <div class="princess-bow">🏹</div>
-                    <div class="princess-avatar">👸</div>
+                    <div class="princess-figure">
+                      <div class="princess-crown-head">👑</div>
+                      <div class="princess-face">👧</div>
+                      <div class="princess-robe red-dress"></div>
+                    </div>
                   </div>
                 </div>
 
@@ -920,7 +932,11 @@
                 <div class="tower-roof-deck princess-deck">
                   <div class="princess-character blue-princess-char">
                     <div class="princess-bow">🏹</div>
-                    <div class="princess-avatar">👸</div>
+                    <div class="princess-figure">
+                      <div class="princess-crown-head">👑</div>
+                      <div class="princess-face">👧</div>
+                      <div class="princess-robe blue-dress"></div>
+                    </div>
                   </div>
                 </div>
 
@@ -959,7 +975,11 @@
                 <div class="tower-roof-deck princess-deck">
                   <div class="princess-character blue-princess-char">
                     <div class="princess-bow">🏹</div>
-                    <div class="princess-avatar">👸</div>
+                    <div class="princess-figure">
+                      <div class="princess-crown-head">👑</div>
+                      <div class="princess-face">👧</div>
+                      <div class="princess-robe blue-dress"></div>
+                    </div>
                   </div>
                 </div>
 
@@ -982,7 +1002,7 @@
             </div>
 
             <!-- Blue King Tower (Center Back) -->
-            <div class="tower-entity king-tower blue-tower" id="tower_blue_king" style="left: 50%; top: 93%;">
+            <div class="tower-entity king-tower blue-tower" id="tower_blue_king" style="left: 50%; top: 90.5%;">
               <!-- Floating Clash Royale Health Gauge (Matching Reference Image) -->
               <div class="tower-cr-health-bar">
                 <span class="cr-crown-shield">👑</span>
@@ -997,10 +1017,11 @@
               <div class="tower-castle-block">
                 <div class="tower-roof-deck">
                   <div class="tower-deck-wood"></div>
-                  <!-- Blue King Character (Back view with cape like reference image) -->
+                  <!-- Blue King Character -->
                   <div class="king-character blue-king-char">
                     <div class="king-crown-head">👑</div>
-                    <div class="king-cape blue-cape"></div>
+                    <div class="king-face-beard">🧔</div>
+                    <div class="king-robe blue-robe"></div>
                   </div>
                   <!-- Pop-up Cannon -->
                   <div class="tower-cannon-mount" id="cannon_blue_king">
@@ -1553,6 +1574,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Global Clash Floating Toast Notification Container -->
+  <div id="clashToast" class="clash-toast" role="status" aria-live="polite"></div>
 
   <script src="/static/app.js"></script>
 </body>

@@ -372,6 +372,13 @@ async def arena_websocket(websocket: WebSocket):
                     await orchestrator.broadcast_state()
                 elif action == "step":
                     await orchestrator.step_turn()
+                elif action == "speed":
+                    new_speed = float(data.get("speed", 1.0))
+                    orchestrator.set_speed(new_speed)
+                    await orchestrator.broadcast_state()
+                elif action == "reset":
+                    orchestrator.reset_match()
+                    await orchestrator.broadcast_state()
             except Exception:
                 pass
     except WebSocketDisconnect:

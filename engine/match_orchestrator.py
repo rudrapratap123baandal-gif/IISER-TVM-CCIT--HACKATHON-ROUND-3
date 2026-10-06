@@ -131,7 +131,7 @@ class MatchOrchestrator:
             self.state.status = "running"
 
     def set_speed(self, multiplier: float):
-        self.speed_multiplier = max(0.25, min(10.0, multiplier))
+        self.speed_multiplier = max(0.25, min(10.0, float(multiplier)))
 
     async def step_turn(self):
         if not self.state or not self.simulator:
@@ -149,7 +149,7 @@ class MatchOrchestrator:
         try:
             while self.state and self.state.status == "running":
                 if self.is_paused:
-                    await asyncio.sleep(0.3)
+                    await asyncio.sleep(0.15)
                     continue
 
                 await self._execute_one_tick()
@@ -185,7 +185,7 @@ class MatchOrchestrator:
                         await self.broadcast_state()
                     break
 
-                sleep_time = max(0.2, self.tick_interval / self.speed_multiplier)
+                sleep_time = max(0.05, self.tick_interval / self.speed_multiplier)
                 await asyncio.sleep(sleep_time)
 
         except asyncio.CancelledError:

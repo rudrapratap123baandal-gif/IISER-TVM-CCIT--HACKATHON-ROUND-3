@@ -8,10 +8,13 @@ Ensures matches purely depend on the participants' uploaded skill files:
 """
 import re
 import json
+import time
 import random
+import socket
 import asyncio
 import urllib.request
 import urllib.error
+from urllib.parse import urlparse
 from typing import Dict, Any, Optional, List
 from engine.config import OLLAMA_BASE_URL, DEFAULT_MODEL, CARD_CATALOG
 from engine.skill_loader import ClashSkillProfile
@@ -25,7 +28,29 @@ class LLMCommander:
     ):
         self.model_name = model_name
         self.base_url = base_url.rstrip("/")
+        if "localhost" in self.base_url:
+            self.base_url = self.base_url.replace("localhost", "127.0.0.1")
         self.timeout = timeout
+        self._ollama_online: Optional[bool] = None
+        self._last_ollama_check: float = 0.0
+
+    def _is_ollama_online(self) -> bool:
+        """Fast non-blocking probe of Ollama reachability cached for 10 seconds."""
+        now = time.time()
+        if self._ollama_online is not None and (now - self._last_ollama_check) < 10.0:
+            return self._ollama_online
+
+        self._last_ollama_check = now
+        try:
+            parsed = urlparse(self.base_url)
+            host = parsed.hostname or "127.0.0.1"
+            port = parsed.port or 11434
+            with socket.create_connection((host, port), timeout=0.12):
+                self._ollama_online = True
+                return True
+        except Exception:
+            self._ollama_online = False
+            return False
 
     async def generate_order_async(
         self,
@@ -69,20 +94,24 @@ class LLMCommander:
         }
 
         raw_response = ""
-        try:
-            req_data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(
-                endpoint,
-                data=req_data,
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=self.timeout) as response:
-                res_body = response.read().decode("utf-8")
-                res_json = json.loads(res_body)
-                raw_response = res_json.get("response", "")
-        except Exception as e:
-            raw_response = f"ERROR: {str(e)}"
+        if self._is_ollama_online():
+            try:
+                req_data = json.dumps(payload).encode("utf-8")
+                req = urllib.request.Request(
+                    endpoint,
+                    data=req_data,
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                    res_body = response.read().decode("utf-8")
+                    res_json = json.loads(res_body)
+                    raw_response = res_json.get("response", "")
+            except Exception as e:
+                self._ollama_online = False
+                raw_response = f"ERROR: {str(e)}"
+        else:
+            raw_response = "OFFLINE: Tactical heuristics active"
 
         parsed_action = self._sanitize_and_validate(raw_response, skill_profile, situational_brief)
         parsed_action["raw_response"] = raw_response

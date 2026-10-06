@@ -5,7 +5,7 @@ and full Card Catalog (troops, tanks, swarms, and spells).
 """
 from typing import Dict, Any
 
-OLLAMA_BASE_URL = "http://localhost:11434"
+OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "qwen2.5:0.5b"
 DEFAULT_MATCH_DURATION_SECONDS = 180  # 3 minutes standard match
 DEFAULT_TICK_INTERVAL_SECONDS = 1.0   # 1 second simulation ticks
